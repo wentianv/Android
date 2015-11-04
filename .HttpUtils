@@ -85,3 +85,45 @@ public class HttpUtils {
 	}
 	
 }
+//************Activity中调用
+
+public class MainActivity extends Activity {
+
+	private EditText editUser,editPwd;
+	private TextView tv;
+	private Button btn;
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_main);
+		editUser = (EditText) this.findViewById(R.id.edit_user);
+		editPwd = (EditText) this.findViewById(R.id.edit_pwd);
+		tv = (TextView) this.findViewById(R.id.tv);
+		btn = (Button) this.findViewById(R.id.btn);
+		btn.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				new Thread(){
+					public void run() {
+						String username = editUser.getText().toString();
+						String password = editPwd.getText().toString();	
+						Map<String,String> params = new HashMap<String, String>();
+						params.put("username", username);
+						params.put("password", password);
+						final String content = HttpUtils.sendPostMessage(params, "utf-8");
+						System.out.println("content--"+content);
+						MainActivity.this.runOnUiThread(new Runnable() {
+							
+							@Override
+							public void run() {
+								Toast.makeText(MainActivity.this,content, 0).show();
+							}
+						});
+						
+					};
+
+				}.start();
+			}
+		});
+	}
+}
