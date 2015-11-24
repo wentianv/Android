@@ -1,0 +1,125 @@
+public class HomeActivity extends Activity {
+
+    private GridView gridView;
+    private List<Map<String,Object>> list;
+    private RelativeLayout layout_title,layout_income;
+    private LinearLayout layout_static;
+    private int[] imgs = {
+      R.mipmap.ic_launcher,R.mipmap.ic_launcher,R.mipmap.ic_launcher,
+      R.mipmap.ic_launcher,R.mipmap.ic_launcher,R.mipmap.ic_launcher,
+    };
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_home);
+        gridView = (GridView) this.findViewById(R.id.gridview);
+        list = new ArrayList<Map<String,Object>>();
+        layout_title = (RelativeLayout) this.findViewById(R.id.layout_title);
+        layout_income = (RelativeLayout) this.findViewById(R.id.layout_income);
+        layout_static = (LinearLayout) this.findViewById(R.id.layout_static);
+        String[] names = this.getResources().getStringArray(R.array.home_array);//加载string-array文件
+
+        for(int i=0;i<6;i++){
+            Map map = new HashMap<String,Object>();
+            map.put("img",imgs[i]);
+            map.put("name",names[i]);
+            list.add(map);
+        }
+        //set the adapter
+        HomeAdapter adapter = new HomeAdapter(this,list,getRemainHeight());
+        gridView.setAdapter(adapter);
+        //ban  the gridview roll
+        gridView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return MotionEvent.ACTION_MOVE == event.getAction()?true:false;
+            }
+        });
+
+        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Map<String, Object> map = (HashMap) parent.getItemAtPosition(position);
+                ToastUtil.toast(map.get("name").toString());
+            }
+        });
+    }
+    //screen remain height
+    public int getRemainHeight() {
+        //Caculate other control height
+        int w = View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED);
+        int h = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+        layout_title.measure(w, h);
+        layout_income.measure(w, h);
+        layout_static.measure(w, h);
+        int height = layout_title.getMeasuredHeight() + layout_income.getMeasuredHeight() + layout_static.getMeasuredHeight();
+
+        //Caculate the screen's height
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        int winHeight = metrics.heightPixels;
+
+        //Caculate the screen's remain height
+        int extralHeight = height + ScreenUtils.getStatusHeight(this) + 1;
+        int remainHeight = winHeight - extralHeight;
+
+        //set GridViews height
+        ViewGroup.LayoutParams params = gridView.getLayoutParams();
+        params.height = remainHeight ;
+        gridView.setLayoutParams(params);
+        return remainHeight;
+    }
+}
+//Adapter class
+public class HomeAdapter extends BaseAdapter{
+    private Context context;
+    private List<Map<String,Object>> list;
+    private int height;   //screen remain height  屏幕剩余高度
+    public HomeAdapter(Context context,List<Map<String,Object>> list,int height){
+        this.context = context;
+        this.list = list;
+        this.height = height;
+    }
+    @Override
+    public int getCount() {
+        return list.size();
+    }
+
+    @Override
+    public Object getItem(int position) {
+        return list.get(position);
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return position;
+    }
+
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        convertView = View.inflate(context, R.layout.home_item,null);
+        TextView name = (TextView) convertView.findViewById(R.id.tv_home_item);
+        ImageView img  = (ImageView) convertView.findViewById(R.id.iv_home_item);
+        name.setText(list.get(position).get("name").toString());
+        img.setImageResource((Integer) list.get(position).get("img"));
+        Log.i("Height",height+"");
+        //设置每个Item的高度
+        int extraHeight = 1;
+        ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,height/2-extraHeight);
+        convertView.setLayoutParams(params);
+        return convertView;
+    }
+}
+//  GridView file in layout 
+<GridView
+        android:id="@+id/gridview"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:background="@color/white"
+        android:numColumns="3"
+        android:scrollbars="none"
+        android:verticalSpacing="0.1dp"
+        android:stretchMode="columnWidth"
+        android:listSelector="@null"
+        />
