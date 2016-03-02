@@ -1,4 +1,4 @@
-//从服务器端获取数据
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
