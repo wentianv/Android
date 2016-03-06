@@ -1,0 +1,169 @@
+//------------------------------------内容提供者-----------------------------------------
+package com.zt.contentprovide.provider;
+
+import android.content.ContentProvider;
+import android.content.ContentUris;
+import android.content.ContentValues;
+import android.content.UriMatcher;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
+
+import com.zt.contentprovide.db.StudentSQLiteHelper;
+/**
+ * 
+ * @author Administrator
+ *ContentUris类用于获取Uri路径后面的ID部分，它有两个比较实用的方法：
+ *withAppendedId(uri, id)用于为路径加上ID部分：
+ *  Uri uri = Uri.parse("content://cn.xxt.provider.personprovider/person")
+  Uri resultUri = ContentUris.withAppendedId(uri, 10);
+   生成后的Uri为：content://cn.xxt.provider.personprovider/person/10
+  parseId(uri)方法用于从路径中获取ID部分：
+  Uri uri = Uri.parse("content://cn.xxt.provider.personprovider/person/10")
+  long personid = ContentUris.parseId(uri);//获取的结果为:10
+ */
+public class StudentConProvider extends ContentProvider{
+
+	private StudentSQLiteHelper helper;
+	private static UriMatcher matcher;//用于匹配Uri对象
+	private static final String authority ="com.zt.contentprovide.provider";//主机名
+	private static final int STUDENT_INSERT = 0;//返回码
+	private static final int STUDENT_UPDATE = 1;
+	private static final int STUDENT_DELETE = 2;
+	private static final int STUDENT_QUERY_ALL = 3;
+	private static final int STUDENT_QUERY_ITEM = 4;  
+	
+	private static final String TABLE = "student";
+	
+	static{//首先把需要匹配的Uri路径添加上
+		matcher = new UriMatcher(UriMatcher.NO_MATCH);//常量表示不匹配任何路径的返回码(-1)
+		//	content://com.zt.contentprovide.provider/student/insert
+		matcher.addURI(authority, "student/insert", STUDENT_INSERT);
+		//  content://com.zt.contentprovide.provider/student/update
+		matcher.addURI(authority, "student/update", STUDENT_UPDATE);
+		// 	content://com.zt.contentprovide.provider/student/delete
+		matcher.addURI(authority, "student/delete", STUDENT_DELETE);
+		//	content://com.zt.contentprovide.provider/student/queryAll
+		matcher.addURI(authority, "student/queryAll", STUDENT_QUERY_ALL);
+		//	content://com.zt.contentprovide.provider/student/queryById
+		matcher.addURI(authority, "student/querById/#", STUDENT_QUERY_ITEM);
+	}
+	@Override
+	public boolean onCreate() {			//当启用组件的时候调用
+		helper = new StudentSQLiteHelper(getContext());
+		return true;
+	}
+
+	@Override
+	public Cursor query(Uri uri, String[] projection, String selection,
+			String[] selectionArgs, String sortOrder) {
+		SQLiteDatabase db = helper.getWritableDatabase();
+		switch (matcher.match(uri)) {
+		case STUDENT_QUERY_ALL:
+			Cursor c1 = db.query(TABLE, projection, selection, selectionArgs, null, null, sortOrder);
+			return c1;
+		case STUDENT_QUERY_ITEM:
+			long id = ContentUris.parseId(uri);
+			Cursor c2 = db.query(TABLE, projection, "_id=?", new String[]{id+""}, null, null, sortOrder);
+			return c2;
+			
+		default:
+			throw new IllegalArgumentException("uri不匹配");
+		}
+	}
+
+	@Override
+	public String getType(Uri uri) {
+		switch (matcher.match(uri)) {
+		case STUDENT_QUERY_ALL:
+			return "vnd.android.cursor.dir/student";
+		case STUDENT_QUERY_ITEM:
+			return "vnd.android.cursor.item/student";
+		default:
+			break;
+		}
+		return null;
+	}
+
+	@Override
+	public Uri insert(Uri uri, ContentValues values) {
+		switch (matcher.match(uri)) {
+		case STUDENT_INSERT:
+			SQLiteDatabase db = helper.getWritableDatabase();
+			long _id = 0;
+			if(db.isOpen()){
+				_id = db.insert(TABLE, null, values);
+				db.close();
+			}
+			return ContentUris.withAppendedId(uri, _id);
+		default:
+			throw new IllegalArgumentException("uri不匹配");
+		}
+	}
+
+	@Override
+	public int delete(Uri uri, String selection, String[] selectionArgs) {
+		switch (matcher.match(uri)) {
+		case STUDENT_DELETE:
+			SQLiteDatabase db = helper.getWritableDatabase();
+			int count =0;
+			if(db.isOpen()){
+				count = db.delete(TABLE, selection, selectionArgs);
+				db.close();
+			}
+			return count;
+		default:
+			throw new IllegalArgumentException("uri不匹配");
+		}
+	}
+
+	@Override
+	public int update(Uri uri, ContentValues values, String selection,
+			String[] selectionArgs) {
+		switch (matcher.match(uri)) {
+		case STUDENT_UPDATE:
+			SQLiteDatabase db = helper.getWritableDatabase();
+			int count = 0;
+			if(db.isOpen()){
+				count = db.update(TABLE, values, selection, selectionArgs);
+				db.close();
+			}
+			return count;
+
+		default:
+			throw new IllegalArgumentException("uri不匹配");
+		}
+	}
+	
+}
+
+
+//----------------------------------------------内容解析者-------------------------------------
+package com.example.contentprovide_control;
+
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.net.Uri;
+import android.test.AndroidTestCase;
+
+public class Test extends AndroidTestCase{
+
+	public static final String CName = "content://com.zt.contentprovide.provider";//主机名
+	public void testInsert(){
+		ContentResolver resolver = getContext().getContentResolver();
+		Uri uri =Uri.parse(CName+"/student/insert");//将字符串转换成uri 对象
+		ContentValues values = new ContentValues();
+		values.put("name", "qw");
+		values.put("sex", "male");
+		values.put("sex", 12);
+		resolver.insert(uri, values);
+	}
+	
+	public void testQueryAll(){
+		ContentResolver resolver = getContext().getContentResolver();
+		
+	}
+
+}
+
+
