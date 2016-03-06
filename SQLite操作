@@ -1,0 +1,98 @@
+package com.zt.contentprovide.dao;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+
+import com.zt.contentprovide.db.StudentSQLiteHelper;
+import com.zt.contentprovide.model.Student;
+
+public class StudentDao {
+	private StudentSQLiteHelper helper;
+
+	public StudentDao(Context context){
+		helper = new StudentSQLiteHelper(context);
+	}
+	
+	public void insert(Student student){// insert
+		SQLiteDatabase db = helper.getWritableDatabase();
+		if(db.isOpen()){
+			ContentValues values = new ContentValues();
+			values.put("name", student.getName());
+			values.put("sex", student.getSex());
+			values.put("age", student.getAge());
+			db.insert("student", null, values );
+			db.close();
+		}
+		
+	}
+	
+	public void update(Student stu){	//update
+		SQLiteDatabase db = helper.getWritableDatabase();
+		if(db.isOpen()){
+			ContentValues values = new ContentValues();
+			values.put("name", stu.getName());
+			values.put("sex", stu.getSex());
+			values.put("age", stu.getAge());
+			db.update("student", values, "id = ?", new String[]{stu.getId()+""});
+			db.close();
+		}
+	}
+	
+	public void delete(int id){
+		SQLiteDatabase db = helper.getWritableDatabase();
+		if(db.isOpen()){
+			
+			int count = db.delete("student", "id = ?", new String[]{id+""});
+			System.out.println("删除的条数:"+count);
+			db.close();
+		}
+	}
+	
+	public List<Student> queryAll(){		//查询全部
+		SQLiteDatabase db = helper.getWritableDatabase();
+		if(db.isOpen()){
+			
+			Cursor c= db.query("student", new String[]{"_id","name","sex","age"}, null, null, null, null, "_id desc");
+			if(c!=null && c.getCount()>0){
+				List<Student> list = new ArrayList<Student>();
+				while(c.moveToNext()){
+					int id = c.getInt(0);
+					String name = c.getString(c.getColumnIndex("name"));
+					String sex = c.getString(c.getColumnIndex("sex"));
+					int age = c.getInt(c.getColumnIndex("age"));
+					list.add(new Student(name, sex, age));
+				}
+				c.close();
+				db.close();
+				return list;
+			}
+		}
+		return null;
+	}
+	
+	public Student queryById(int id){		//根据Id 查找
+		SQLiteDatabase db = helper.getWritableDatabase();
+		if(db.isOpen()){
+			
+			Cursor c = db.query("student",  new String[]{"_id","name","sex","age"}, "id = ?",new String[]{id+""}, null, null,null);
+			if(c!=null && c.moveToFirst()){
+				int sid = c.getInt(0);
+				String name = c.getString(c.getColumnIndex("name"));
+				String sex = c.getString(c.getColumnIndex("sex"));
+				int age = c.getInt(c.getColumnIndex("age"));
+				Student stu = new Student(name, sex, age);
+				stu.setId(sid);
+				c.close();
+				db.close();
+				return stu;
+			}
+			
+		}
+		return null;
+	}
+}
