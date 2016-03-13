@@ -1,0 +1,140 @@
+package com.pull.parser;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserFactory;
+
+import com.pull.domain.Person;
+/*<?xml version="1.0" encoding="UTF-8"?>
+<persons>
+	<person id = "23">
+		<name>张老师</name>
+		<age>28</age>	
+	</person>
+	
+	<person id = "25">
+		<name>李老师</name>
+		<age>25</age>
+	</person>
+</persons>*/
+/**
+ * 
+ * 
+ * @author Administrator
+ * 
+ * 使用Pull解析xml文档
+ * 一个接口，一个例外，一个工厂组成的Pull解析器
+ * 简单易用：Pull解析器只有一个重要的next方法，用来检索下一个事件,5个属性：
+ * 1.STARTDOCUMENT
+ * 2.START_TAG
+ * 3.TEXT
+ * 4.END_TAG
+ * 5.ENDDOCUMENT
+ *
+ */
+
+public class PullXmlTools {
+
+	public PullXmlTools(){
+		
+	}
+	/**
+	 * 
+	 * @param inputstream   从服务器获取xml文件，以流的形式返回
+	 * @param encode		编码格式
+	 * @return
+	 */
+	
+	public static List<Person> parseXML(InputStream inputstream,String encode) throws Exception{
+		List<Person> list = null;
+		Person person = null; //装载解析每一个person节点的内容
+		
+		//创建一个xml解析的工厂
+		XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+		//获得xml解析类的引用
+		XmlPullParser parser = factory.newPullParser();
+		parser.setInput(inputstream, encode);
+		//获得事件的类型
+		int eventType = parser.getEventType();
+		while(eventType!=XmlPullParser.END_DOCUMENT){
+			switch (eventType) {
+			case XmlPullParser.START_DOCUMENT:  //开始节点
+				list = new ArrayList<Person>();
+				break;
+			case XmlPullParser.START_TAG:  
+				if("person".equals(parser.getName())){
+					person = new Person();
+					//取出属性值
+					int id = Integer.parseInt(parser.getAttributeValue(0));
+					person.setId(id);
+				}else if("name".equals(parser.getName())){
+					String name = parser.nextText();   //获取该节点的内容
+					person.setName(name);
+				}else if("age".equals(parser.getName())){
+					int age = Integer.parseInt(parser.nextText());
+					person.setAge(age);
+				}
+				break;
+			case XmlPullParser.END_TAG://解析到当前的结束节点</person>
+				if("person".equals(parser.getName())){
+					list.add(person);
+					person=null;  //置空以便继续new下一个解析对象
+				}
+				break;
+			default:
+				break;
+			}
+			eventType = parser.next();//循环开始解析下一个
+		}
+		
+		return list;
+	}
+}
+
+//从服务器端获取XML文件的InputStream 流
+public class HttpUtils {
+
+	public HttpUtils(){
+		
+	}
+	
+	public static InputStream getXML(String path){
+		InputStream input = null;
+		try {
+			URL uri = new URL(path);
+			if(uri!=null){
+				HttpURLConnection connection = (HttpURLConnection) uri.openConnection();
+				connection.setDoInput(true);
+				connection.setConnectTimeout(3000);
+				connection.setRequestMethod("GET");
+				int code = connection.getResponseCode();
+				if(code == 200){
+					input = connection.getInputStream();
+				}
+			}
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
+		return input;
+	}
+}
+
+public class Test {
+	public static void main(String[] args) {
+		String path = "http://192.168.0.105:8080/androidmyhttp/person.xml";
+		InputStream inputStream = HttpUtils.getXML(path);
+		try {
+			List<Person> list = PullXmlTools.parseXML(inputStream, "utf-8");
+			for(Person person : list){
+				System.out.println(person.toString());
+			}
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+}  
